@@ -31,7 +31,7 @@ async def get_upcoming(
 
 @cached("now_showing", ttl=config.CACHE_TTL_MOVIES)
 async def _fetch_now_showing(region: str):
-    url = f"{config.BMS_BASE_URL}/{region}/movies"
+    url = f"{config.BMS_BASE_URL}/explore/movies-{region}"
     html = await scrape_movies_page(url)
     movies = parse_movies_from_html(html, "now_showing")
     return {
@@ -44,7 +44,7 @@ async def _fetch_now_showing(region: str):
 
 @cached("upcoming", ttl=config.CACHE_TTL_MOVIES)
 async def _fetch_upcoming(region: str):
-    url = f"{config.BMS_BASE_URL}/{region}/movies/upcoming"
+    url = f"{config.BMS_BASE_URL}/explore/upcoming-movies-{region}"
     html = await scrape_movies_page(url)
     movies = parse_movies_from_html(html, "upcoming")
     return {
