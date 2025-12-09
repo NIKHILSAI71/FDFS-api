@@ -51,9 +51,11 @@ TOOLS = [
     ),
 ]
 
+
 @app.list_tools()
 async def list_tools() -> list[Tool]:
     return TOOLS
+
 
 @app.call_tool()
 async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
@@ -63,11 +65,12 @@ async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
         "get_theaters": lambda: _get_theaters(arguments.get("region_code", "")),
         "get_now_showing": lambda: _get_now_showing(arguments.get("region_slug", "")),
     }
-    
+
     handler = handlers.get(name)
     result = await handler() if handler else {"error": f"Unknown tool: {name}"}
-    
+
     return [TextContent(type="text", text=json.dumps(result, indent=2))]
+
 
 async def _get_regions() -> dict:
     url = f"{config.BMS_BASE_URL}/api/explore/v1/discover/regions"
@@ -78,6 +81,7 @@ async def _get_regions() -> dict:
             regions.append({"code": city.get("RegionCode"), "name": city.get("RegionName")})
     return {"regions": regions, "count": len(regions)}
 
+
 async def _search_movies(query: str) -> dict:
     from urllib.parse import quote
     url = f"{config.BMS_BASE_URL}/quickbook-search.bms?cat=MT&q={quote(query)}"
@@ -85,11 +89,13 @@ async def _search_movies(query: str) -> dict:
     movies = [{"name": h.get("TITLE"), "id": h.get("ID")} for h in data.get("hits", [])[:10] if h.get("TYPE") == "MT"]
     return {"movies": movies, "query": query}
 
+
 async def _get_theaters(region_code: str) -> dict:
     url = f"{config.BMS_BASE_URL}/api/v2/mobile/venues"
     data = await fetch_json(url, params={"regionCode": region_code, "eventType": "MT"})
     theaters = [{"name": v.get("VenueName"), "code": v.get("VenueCode")} for v in data.get("venues", [])[:20]]
     return {"theaters": theaters, "region": region_code}
+
 
 async def _get_now_showing(region_slug: str) -> dict:
     url = f"{config.BMS_BASE_URL}/{region_slug}/movies"
@@ -97,9 +103,11 @@ async def _get_now_showing(region_slug: str) -> dict:
     movies = parse_movies_from_html(html, "now_showing")[:15]
     return {"movies": movies, "region": region_slug}
 
+
 async def main():
     async with stdio_server() as (read_stream, write_stream):
         await app.run(read_stream, write_stream, app.create_initialization_options())
+
 
 if __name__ == "__main__":
     asyncio.run(main())

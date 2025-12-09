@@ -6,30 +6,32 @@ import json
 from typing import List, Dict
 from app.services.http_client import fetch_html
 
+
 async def scrape_movies_page(url: str) -> str:
     """Fetch a movies page HTML content."""
     return await fetch_html(url)
 
+
 def parse_movies_from_html(html: str, movie_type: str) -> List[Dict]:
     """Parse movie data from HTML content."""
     movies = []
-    
+
     movie_blocks = re.findall(
         r'data-entity-id="([^"]+)"[^>]*data-entity-name="([^"]+)"',
         html
     )
-    
+
     for entity_id, entity_name in movie_blocks:
         movies.append({
             "id": entity_id,
             "name": entity_name,
             "type": movie_type
         })
-    
+
     if not movies:
         json_ld_pattern = r'<script type="application/ld\+json">(.*?)</script>'
         json_matches = re.findall(json_ld_pattern, html, re.DOTALL)
-        
+
         for json_str in json_matches:
             try:
                 data = json.loads(json_str)
@@ -49,8 +51,9 @@ def parse_movies_from_html(html: str, movie_type: str) -> List[Dict]:
                             })
             except json.JSONDecodeError:
                 pass
-    
+
     return movies
+
 
 async def close_pool():
     """No cleanup needed."""
