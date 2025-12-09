@@ -10,6 +10,9 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
+  APP_NAME: FDFS-API
+  APP_VERSION: "1.0.0"
+  APP_DESCRIPTION: "FDFS - First Day First Show: High-performance movie booking API with MCP support for AI assistants"
 
 jobs:
   test:
@@ -75,7 +78,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=sha,prefix=
+            type=raw,value=${{ env.APP_VERSION }}
             type=raw,value=latest
       
       - name: Push Docker image
@@ -129,23 +132,23 @@ jobs:
           EOF
           chmod +x dist/fdfs-mcp/run.sh
           
-          cat > dist/fdfs-mcp/mcp.json << 'EOF'
+          cat > dist/fdfs-mcp/mcp.json << EOF
           {
             "name": "fdfs-mcp",
-            "version": "1.0.0",
+            "version": "${{ env.APP_VERSION }}",
             "description": "FDFS MCP server for BookMyShow movie data",
             "tools": ["get_regions", "search_movies", "get_theaters", "get_now_showing"],
             "entry": "python -m fdfs_mcp.server"
           }
           EOF
           
-          cd dist && zip -r fdfs-mcp.zip fdfs-mcp/
+          cd dist && zip -r fdfs-mcp-${{ env.APP_VERSION }}.zip fdfs-mcp/
       
       - name: Upload MCP Package
         uses: actions/upload-artifact@v4
         with:
           name: fdfs-mcp
-          path: dist/fdfs-mcp.zip
+          path: dist/fdfs-mcp-${{ env.APP_VERSION }}.zip
           retention-days: 90
 
   source-package:
@@ -171,13 +174,13 @@ jobs:
           cp .env.example dist/fdfs-source/
           cp .gitignore dist/fdfs-source/
           
-          cd dist && zip -r fdfs-source.zip fdfs-source/
+          cd dist && zip -r fdfs-source-${{ env.APP_VERSION }}.zip fdfs-source/
       
       - name: Upload Source Package
         uses: actions/upload-artifact@v4
         with:
           name: fdfs-source
-          path: dist/fdfs-source.zip
+          path: dist/fdfs-source-${{ env.APP_VERSION }}.zip
           retention-days: 90
 
   release:
@@ -188,6 +191,11 @@ jobs:
       contents: write
     
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
       - name: Download MCP Package
         uses: actions/download-artifact@v4
         with:
@@ -200,19 +208,55 @@ jobs:
           name: fdfs-source
           path: dist/
       
-      - name: Get short SHA
-        id: sha
-        run: echo "short=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
+      - name: Generate Changelog
+        id: changelog
+        run: |
+          echo "## 📦 ${{ env.APP_NAME }} v${{ env.APP_VERSION }}" > changelog.md
+          echo "" >> changelog.md
+          echo "${{ env.APP_DESCRIPTION }}" >> changelog.md
+          echo "" >> changelog.md
+          echo "---" >> changelog.md
+          echo "" >> changelog.md
+          echo "### 🚀 What's Included" >> changelog.md
+          echo "" >> changelog.md
+          echo "| Package | Description |" >> changelog.md
+          echo "|---------|-------------|" >> changelog.md
+          echo "| \`fdfs-mcp-${{ env.APP_VERSION }}.zip\` | MCP Server for AI assistants (Claude, etc.) |" >> changelog.md
+          echo "| \`fdfs-source-${{ env.APP_VERSION }}.zip\` | Complete source code |" >> changelog.md
+          echo "| Docker Image | \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.APP_VERSION }}\` |" >> changelog.md
+          echo "" >> changelog.md
+          echo "### 📝 Recent Changes" >> changelog.md
+          echo "" >> changelog.md
+          git log --oneline -10 --pretty=format:"- %s (%h)" >> changelog.md
+          echo "" >> changelog.md
+          echo "" >> changelog.md
+          echo "### 🛠️ MCP Tools Available" >> changelog.md
+          echo "" >> changelog.md
+          echo "- \`get_regions\` - Get all BookMyShow regions/cities" >> changelog.md
+          echo "- \`search_movies\` - Search for movies by name" >> changelog.md
+          echo "- \`get_theaters\` - Get theaters in a region" >> changelog.md
+          echo "- \`get_now_showing\` - Get currently showing movies" >> changelog.md
+          echo "" >> changelog.md
+          echo "### 📖 Quick Start" >> changelog.md
+          echo "" >> changelog.md
+          echo "\`\`\`bash" >> changelog.md
+          echo "# Docker" >> changelog.md
+          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.APP_VERSION }}" >> changelog.md
+          echo "" >> changelog.md
+          echo "# MCP (extract zip and run)" >> changelog.md
+          echo "pip install -r requirements.txt" >> changelog.md
+          echo "python -m fdfs_mcp.server" >> changelog.md
+          echo "\`\`\`" >> changelog.md
       
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: build-${{ steps.sha.outputs.short }}
-          name: Build ${{ steps.sha.outputs.short }}
+          tag_name: v${{ env.APP_VERSION }}
+          name: ${{ env.APP_NAME }} v${{ env.APP_VERSION }}
+          body_path: changelog.md
           files: |
-            dist/fdfs-mcp.zip
-            dist/fdfs-source.zip
-          generate_release_notes: true
-          prerelease: true
+            dist/fdfs-mcp-${{ env.APP_VERSION }}.zip
+            dist/fdfs-source-${{ env.APP_VERSION }}.zip
+          make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
