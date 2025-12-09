@@ -2,6 +2,7 @@
 MCP Server for BookMyShow API
 Exposes movie search, theaters, and showtimes as AI tools.
 """
+
 import asyncio
 import json
 from typing import Any
@@ -20,7 +21,7 @@ TOOLS = [
     Tool(
         name="get_regions",
         description="Get all BookMyShow regions/cities in India",
-        inputSchema={"type": "object", "properties": {}, "required": []}
+        inputSchema={"type": "object", "properties": {}, "required": []},
     ),
     Tool(
         name="search_movies",
@@ -28,26 +29,36 @@ TOOLS = [
         inputSchema={
             "type": "object",
             "properties": {"query": {"type": "string", "description": "Movie name"}},
-            "required": ["query"]
-        }
+            "required": ["query"],
+        },
     ),
     Tool(
         name="get_theaters",
         description="Get theaters in a region",
         inputSchema={
             "type": "object",
-            "properties": {"region_code": {"type": "string", "description": "Region code (HYD, MUMBAI)"}},
-            "required": ["region_code"]
-        }
+            "properties": {
+                "region_code": {
+                    "type": "string",
+                    "description": "Region code (HYD, MUMBAI)",
+                }
+            },
+            "required": ["region_code"],
+        },
     ),
     Tool(
         name="get_now_showing",
         description="Get currently showing movies",
         inputSchema={
             "type": "object",
-            "properties": {"region_slug": {"type": "string", "description": "Region slug (hyderabad)"}},
-            "required": ["region_slug"]
-        }
+            "properties": {
+                "region_slug": {
+                    "type": "string",
+                    "description": "Region slug (hyderabad)",
+                }
+            },
+            "required": ["region_slug"],
+        },
     ),
 ]
 
@@ -78,22 +89,32 @@ async def _get_regions() -> dict:
     regions = []
     if "BookMyShow" in data:
         for city in data["BookMyShow"].get("TopCities", [])[:30]:
-            regions.append({"code": city.get("RegionCode"), "name": city.get("RegionName")})
+            regions.append(
+                {"code": city.get("RegionCode"), "name": city.get("RegionName")}
+            )
     return {"regions": regions, "count": len(regions)}
 
 
 async def _search_movies(query: str) -> dict:
     from urllib.parse import quote
+
     url = f"{config.BMS_BASE_URL}/quickbook-search.bms?cat=MT&q={quote(query)}"
     data = await fetch_json(url)
-    movies = [{"name": h.get("TITLE"), "id": h.get("ID")} for h in data.get("hits", [])[:10] if h.get("TYPE") == "MT"]
+    movies = [
+        {"name": h.get("TITLE"), "id": h.get("ID")}
+        for h in data.get("hits", [])[:10]
+        if h.get("TYPE") == "MT"
+    ]
     return {"movies": movies, "query": query}
 
 
 async def _get_theaters(region_code: str) -> dict:
     url = f"{config.BMS_BASE_URL}/api/v2/mobile/venues"
     data = await fetch_json(url, params={"regionCode": region_code, "eventType": "MT"})
-    theaters = [{"name": v.get("VenueName"), "code": v.get("VenueCode")} for v in data.get("venues", [])[:20]]
+    theaters = [
+        {"name": v.get("VenueName"), "code": v.get("VenueCode")}
+        for v in data.get("venues", [])[:20]
+    ]
     return {"theaters": theaters, "region": region_code}
 
 

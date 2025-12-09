@@ -1,6 +1,7 @@
 """
 HTTP client with Cloudflare bypass using curl-cffi.
 """
+
 import asyncio
 from curl_cffi import requests as cf_requests
 from fastapi import HTTPException
@@ -18,18 +19,20 @@ async def fetch_json(url: str, params: dict = None) -> dict:
         response = await loop.run_in_executor(
             None,
             lambda: cf_requests.get(
-                url,
-                impersonate="chrome120",
-                headers=config.BMS_HEADERS,
-                timeout=30
-            )
+                url, impersonate="chrome120", headers=config.BMS_HEADERS, timeout=30
+            ),
         )
 
         if response.status_code == 403:
-            raise HTTPException(status_code=503, detail="Cloudflare is blocking requests.")
+            raise HTTPException(
+                status_code=503, detail="Cloudflare is blocking requests."
+            )
 
         if response.status_code != 200:
-            raise HTTPException(status_code=response.status_code, detail=f"API returned {response.status_code}")
+            raise HTTPException(
+                status_code=response.status_code,
+                detail=f"API returned {response.status_code}",
+            )
 
         return response.json()
 
@@ -46,15 +49,14 @@ async def fetch_html(url: str) -> str:
         response = await loop.run_in_executor(
             None,
             lambda: cf_requests.get(
-                url,
-                impersonate="chrome120",
-                headers=config.BMS_HEADERS,
-                timeout=30
-            )
+                url, impersonate="chrome120", headers=config.BMS_HEADERS, timeout=30
+            ),
         )
 
         if response.status_code == 403:
-            raise HTTPException(status_code=503, detail="Cloudflare is blocking requests.")
+            raise HTTPException(
+                status_code=503, detail="Cloudflare is blocking requests."
+            )
 
         return response.text
 

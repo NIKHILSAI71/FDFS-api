@@ -1,6 +1,7 @@
 """
 BookMyShow Fast API - Main Application
 """
+
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,6 +14,7 @@ from app.core.security import limiter
 from app.services import close_client, close_pool, close_redis
 from app.routes import regions_router, search_router, theaters_router, movies_router
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Manage application lifecycle."""
@@ -21,12 +23,13 @@ async def lifespan(app: FastAPI):
     await close_pool()
     await close_redis()
 
+
 app = FastAPI(
     title="FDFS - First Day First Show API",
     description="High-performance movie booking API powered by BookMyShow data",
     version="1.0.0",
     default_response_class=ORJSONResponse,
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 # Rate limiting
@@ -48,9 +51,11 @@ app.include_router(search_router)
 app.include_router(theaters_router)
 app.include_router(movies_router)
 
+
 @app.get("/", tags=["Health"])
 async def health_check():
     return {"status": "ok", "message": "FDFS - First Day First Show API is running"}
+
 
 @app.get("/health", tags=["Health"])
 async def detailed_health():

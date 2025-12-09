@@ -1,6 +1,7 @@
 """
 Redis cache service.
 """
+
 import redis.asyncio as redis
 from typing import Optional, Callable, Any
 from functools import wraps
@@ -13,7 +14,9 @@ _redis: Optional[redis.Redis] = None
 async def get_redis() -> redis.Redis:
     global _redis
     if _redis is None:
-        _redis = redis.from_url(config.REDIS_URL, encoding="utf-8", decode_responses=False)
+        _redis = redis.from_url(
+            config.REDIS_URL, encoding="utf-8", decode_responses=False
+        )
     return _redis
 
 
@@ -57,5 +60,7 @@ def cached(key_prefix: str, ttl: int = 300):
             result = await func(*args, **kwargs)
             await set_cached(cache_key, result, ttl)
             return result
+
         return wrapper
+
     return decorator

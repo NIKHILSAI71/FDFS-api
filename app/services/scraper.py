@@ -1,6 +1,7 @@
 """
 Scraper service for parsing HTML content.
 """
+
 import re
 import json
 from typing import List, Dict
@@ -17,16 +18,11 @@ def parse_movies_from_html(html: str, movie_type: str) -> List[Dict]:
     movies = []
 
     movie_blocks = re.findall(
-        r'data-entity-id="([^"]+)"[^>]*data-entity-name="([^"]+)"',
-        html
+        r'data-entity-id="([^"]+)"[^>]*data-entity-name="([^"]+)"', html
     )
 
     for entity_id, entity_name in movie_blocks:
-        movies.append({
-            "id": entity_id,
-            "name": entity_name,
-            "type": movie_type
-        })
+        movies.append({"id": entity_id, "name": entity_name, "type": movie_type})
 
     if not movies:
         json_ld_pattern = r'<script type="application/ld\+json">(.*?)</script>'
@@ -36,19 +32,23 @@ def parse_movies_from_html(html: str, movie_type: str) -> List[Dict]:
             try:
                 data = json.loads(json_str)
                 if isinstance(data, dict) and data.get("@type") == "Movie":
-                    movies.append({
-                        "id": data.get("identifier", ""),
-                        "name": data.get("name", ""),
-                        "type": movie_type
-                    })
+                    movies.append(
+                        {
+                            "id": data.get("identifier", ""),
+                            "name": data.get("name", ""),
+                            "type": movie_type,
+                        }
+                    )
                 elif isinstance(data, list):
                     for item in data:
                         if isinstance(item, dict) and item.get("@type") == "Movie":
-                            movies.append({
-                                "id": item.get("identifier", ""),
-                                "name": item.get("name", ""),
-                                "type": movie_type
-                            })
+                            movies.append(
+                                {
+                                    "id": item.get("identifier", ""),
+                                    "name": item.get("name", ""),
+                                    "type": movie_type,
+                                }
+                            )
             except json.JSONDecodeError:
                 pass
 

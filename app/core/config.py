@@ -12,10 +12,10 @@ WORKERS = int(os.getenv("WORKERS", 4))
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
 
 # Cache TTL (seconds)
-CACHE_TTL_REGIONS = 3600      # 1 hour
-CACHE_TTL_MOVIES = 300        # 5 minutes
-CACHE_TTL_THEATERS = 600      # 10 minutes
-CACHE_TTL_SEARCH = 120        # 2 minutes
+CACHE_TTL_REGIONS = 3600  # 1 hour
+CACHE_TTL_MOVIES = 300  # 5 minutes
+CACHE_TTL_THEATERS = 600  # 10 minutes
+CACHE_TTL_SEARCH = 120  # 2 minutes
 
 # Security
 API_KEYS = set(os.getenv("API_KEYS", "dev-key-123").split(","))
