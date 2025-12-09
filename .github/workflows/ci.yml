@@ -3,11 +3,8 @@ name: CI/CD
 on:
   push:
     branches: [main]
-    tags: ['v*']
   pull_request:
     branches: [main]
-  release:
-    types: [published]
   workflow_dispatch:
 
 env:
@@ -47,6 +44,9 @@ jobs:
   docker:
     runs-on: ubuntu-latest
     needs: test
+    permissions:
+      contents: read
+      packages: write
     
     steps:
       - name: Checkout
@@ -61,6 +61,31 @@ jobs:
           sleep 5
           curl -f http://localhost:8000/health || exit 1
           docker stop test-api
+      
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=
+            type=raw,value=latest
+      
+      - name: Push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: deploy/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
 
   mcp-package:
     runs-on: ubuntu-latest
@@ -116,66 +141,78 @@ jobs:
           
           cd dist && zip -r fdfs-mcp.zip fdfs-mcp/
       
-      - name: Upload MCP Package Artifact
+      - name: Upload MCP Package
         uses: actions/upload-artifact@v4
         with:
           name: fdfs-mcp
           path: dist/fdfs-mcp.zip
-          retention-days: 30
+          retention-days: 90
 
-  release:
+  source-package:
     runs-on: ubuntu-latest
-    needs: [test, docker, mcp-package]
-    if: github.event_name == 'release' || startsWith(github.ref, 'refs/tags/v')
-    permissions:
-      contents: write
-      packages: write
+    needs: test
     
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
+      - name: Create Source Package
+        run: |
+          mkdir -p dist/fdfs-source
+          
+          # Copy core files only
+          cp -r app/ dist/fdfs-source/
+          cp -r fdfs_mcp/ dist/fdfs-source/
+          cp -r deploy/ dist/fdfs-source/
+          cp -r docs/ dist/fdfs-source/
+          cp requirements.txt dist/fdfs-source/
+          cp pyproject.toml dist/fdfs-source/
+          cp README.md dist/fdfs-source/
+          cp .env.example dist/fdfs-source/
+          cp .gitignore dist/fdfs-source/
+          
+          cd dist && zip -r fdfs-source.zip fdfs-source/
       
+      - name: Upload Source Package
+        uses: actions/upload-artifact@v4
+        with:
+          name: fdfs-source
+          path: dist/fdfs-source.zip
+          retention-days: 90
+
+  release:
+    runs-on: ubuntu-latest
+    needs: [docker, mcp-package, source-package]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: write
+    
+    steps:
       - name: Download MCP Package
         uses: actions/download-artifact@v4
         with:
           name: fdfs-mcp
           path: dist/
       
-      - name: Log in to Container Registry
-        uses: docker/login-action@v3
+      - name: Download Source Package
+        uses: actions/download-artifact@v4
         with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          name: fdfs-source
+          path: dist/
       
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=latest,enable={{is_default_branch}}
+      - name: Get short SHA
+        id: sha
+        run: echo "short=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
       
-      - name: Build and push Docker
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: deploy/Dockerfile
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-      
-      - name: Create GitHub Release
+      - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: dist/fdfs-mcp.zip
+          tag_name: build-${{ steps.sha.outputs.short }}
+          name: Build ${{ steps.sha.outputs.short }}
+          files: |
+            dist/fdfs-mcp.zip
+            dist/fdfs-source.zip
           generate_release_notes: true
+          prerelease: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
