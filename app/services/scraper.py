@@ -57,7 +57,9 @@ def parse_movies_from_html(html: str, movie_type: str) -> List[Dict]:
         for i, slug in enumerate(unique_slugs):
             if slug in ["upcoming", "now-playing", "coming-soon", "movies"]:
                 continue
-            movie_id = unique_et_codes[i] if i < len(unique_et_codes) else f"UNKNOWN-{i}"
+            movie_id = (
+                unique_et_codes[i] if i < len(unique_et_codes) else f"UNKNOWN-{i}"
+            )
             if movie_id in seen_ids:
                 continue
             seen_ids.add(movie_id)
@@ -93,7 +95,11 @@ def parse_movies_from_html(html: str, movie_type: str) -> List[Dict]:
                             {
                                 "id": movie_id,
                                 "name": data.get("name", ""),
-                                "slug": data.get("url", "").split("/")[-2] if data.get("url") else "",
+                                "slug": (
+                                    data.get("url", "").split("/")[-2]
+                                    if data.get("url")
+                                    else ""
+                                ),
                                 "type": movie_type,
                             }
                         )
@@ -107,7 +113,11 @@ def parse_movies_from_html(html: str, movie_type: str) -> List[Dict]:
                                     {
                                         "id": movie_id,
                                         "name": item.get("name", ""),
-                                        "slug": item.get("url", "").split("/")[-2] if item.get("url") else "",
+                                        "slug": (
+                                            item.get("url", "").split("/")[-2]
+                                            if item.get("url")
+                                            else ""
+                                        ),
                                         "type": movie_type,
                                     }
                                 )
