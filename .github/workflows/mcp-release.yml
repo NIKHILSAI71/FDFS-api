@@ -33,12 +33,12 @@ jobs:
       
       - name: Test MCP Server
         run: |
-          python -c "from mcp.mcp_server import app; print('MCP Server OK')"
+          python -c "from fdfs_mcp.server import app; print('MCP Server OK')"
       
       - name: Create MCP Package
         run: |
           mkdir -p dist/mcp-package
-          cp -r mcp/ dist/mcp-package/
+          cp -r fdfs_mcp/ dist/mcp-package/
           cp -r app/ dist/mcp-package/
           cp requirements.txt dist/mcp-package/
           cp README.md dist/mcp-package/
@@ -57,7 +57,7 @@ jobs:
               "get_theaters",
               "get_now_showing"
             ],
-            "entry": "python -m mcp.mcp_server"
+            "entry": "python -m fdfs_mcp.server"
           }
           EOF
           
@@ -80,7 +80,7 @@ jobs:
           echo '  "mcpServers": {' >> $GITHUB_STEP_SUMMARY
           echo '    "bookmyshow": {' >> $GITHUB_STEP_SUMMARY
           echo '      "command": "python",' >> $GITHUB_STEP_SUMMARY
-          echo '      "args": ["-m", "mcp.mcp_server"],' >> $GITHUB_STEP_SUMMARY
+          echo '      "args": ["-m", "fdfs_mcp.server"],' >> $GITHUB_STEP_SUMMARY
           echo '      "cwd": "/path/to/mcp-package"' >> $GITHUB_STEP_SUMMARY
           echo '    }' >> $GITHUB_STEP_SUMMARY
           echo '  }' >> $GITHUB_STEP_SUMMARY
