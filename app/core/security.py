@@ -1,4 +1,4 @@
-from fastapi import Security, HTTPException, status, Request
+from fastapi import Security, HTTPException, status
 from fastapi.security import APIKeyHeader
 from slowapi import Limiter
 from slowapi.util import get_remote_address
