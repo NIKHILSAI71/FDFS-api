@@ -151,41 +151,9 @@ jobs:
           path: dist/fdfs-mcp-${{ env.APP_VERSION }}.zip
           retention-days: 90
 
-  source-package:
-    runs-on: ubuntu-latest
-    needs: test
-    
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      
-      - name: Create Source Package
-        run: |
-          mkdir -p dist/fdfs-source
-          
-          # Copy core files only
-          cp -r app/ dist/fdfs-source/
-          cp -r fdfs_mcp/ dist/fdfs-source/
-          cp -r deploy/ dist/fdfs-source/
-          cp -r docs/ dist/fdfs-source/
-          cp requirements.txt dist/fdfs-source/
-          cp pyproject.toml dist/fdfs-source/
-          cp README.md dist/fdfs-source/
-          cp .env.example dist/fdfs-source/
-          cp .gitignore dist/fdfs-source/
-          
-          cd dist && zip -r fdfs-source-${{ env.APP_VERSION }}.zip fdfs-source/
-      
-      - name: Upload Source Package
-        uses: actions/upload-artifact@v4
-        with:
-          name: fdfs-source
-          path: dist/fdfs-source-${{ env.APP_VERSION }}.zip
-          retention-days: 90
-
   release:
     runs-on: ubuntu-latest
-    needs: [docker, mcp-package, source-package]
+    needs: [docker, mcp-package]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     permissions:
       contents: write
@@ -202,12 +170,6 @@ jobs:
           name: fdfs-mcp
           path: dist/
       
-      - name: Download Source Package
-        uses: actions/download-artifact@v4
-        with:
-          name: fdfs-source
-          path: dist/
-      
       - name: Generate Changelog
         id: changelog
         run: |
@@ -222,8 +184,8 @@ jobs:
           echo "| Package | Description |" >> changelog.md
           echo "|---------|-------------|" >> changelog.md
           echo "| \`fdfs-mcp-${{ env.APP_VERSION }}.zip\` | MCP Server for AI assistants (Claude, etc.) |" >> changelog.md
-          echo "| \`fdfs-source-${{ env.APP_VERSION }}.zip\` | Complete source code |" >> changelog.md
           echo "| Docker Image | \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.APP_VERSION }}\` |" >> changelog.md
+          echo "| Source Code | Auto-attached zip/tar.gz |" >> changelog.md
           echo "" >> changelog.md
           echo "### 📝 Recent Changes" >> changelog.md
           echo "" >> changelog.md
@@ -254,9 +216,7 @@ jobs:
           tag_name: v${{ env.APP_VERSION }}
           name: ${{ env.APP_NAME }} v${{ env.APP_VERSION }}
           body_path: changelog.md
-          files: |
-            dist/fdfs-mcp-${{ env.APP_VERSION }}.zip
-            dist/fdfs-source-${{ env.APP_VERSION }}.zip
+          files: dist/fdfs-mcp-${{ env.APP_VERSION }}.zip
           make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
