@@ -34,7 +34,10 @@ def parse_movies_from_html(html: str, movie_type: str) -> List[Dict]:
             "name": name,
             "slug": slug,
             "type": movie_type,
-            "poster": f"https://assets-in.bmscdn.com/discovery-catalog/events/tr:w-400,h-600,bg-CCCCCC/{movie_id.lower()}-portrait.jpg",
+            "poster": (
+                f"https://assets-in.bmscdn.com/discovery-catalog/events/"
+                f"tr:w-400,h-600,bg-CCCCCC/{movie_id.lower()}-portrait.jpg"
+            ),
             "booking_url": f"https://in.bookmyshow.com/movies/{slug}/{movie_id}",
         })
 
@@ -63,7 +66,10 @@ def parse_movies_from_html(html: str, movie_type: str) -> List[Dict]:
                 "name": name,
                 "slug": slug,
                 "type": movie_type,
-                "poster": f"https://assets-in.bmscdn.com/discovery-catalog/events/tr:w-400,h-600,bg-CCCCCC/{movie_id.lower()}-portrait.jpg",
+                "poster": (
+                    f"https://assets-in.bmscdn.com/discovery-catalog/events/"
+                    f"tr:w-400,h-600,bg-CCCCCC/{movie_id.lower()}-portrait.jpg"
+                ),
                 "booking_url": f"https://in.bookmyshow.com/movies/{slug}/{movie_id}",
             })
 
